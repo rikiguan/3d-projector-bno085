@@ -14,14 +14,10 @@
 #include "driver/i2c.h"
 #include "3d_render.h"
 
+void setupBNO085(void);
+int getEularData(float *fac_yaw, float *fac_pitch, float *fac_roll);
 
-
-void setup1(void);
-int loop1(float* fac_yaw,float* fac_pitch,float* fac_roll);
-
-
-
-static const char *TAG = "example";
+static const char *TAG = "main";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
@@ -78,7 +74,7 @@ lv_color_t *buffer1 = NULL;
 lv_color_t *buffer = NULL;
 lv_color_t Black;
 
-Point3 ScreenPoints[] = {{-0.8, 0.8, -5}, {-0.8, -0.8, -5}, {0.8, 0.8, -5}, {0.8, -0.8, -5}}; // 屏幕三维对应点： 左上、左下、右上、右下
+Point3 ScreenPoints[] = {{-0.8, 0.8, -1}, {-0.8, -0.8, -1}, {0.8, 0.8, -1}, {0.8, -0.8, -1}}; // 屏幕三维对应点： 左上、左下、右上、右下
 Point3 ScreenPoints3[] = {{0, 1, -1}, {0, 0, -1}, {1, 1, -1}, {1, 0, -1}};                    // 贴图对应点：左上、左下、右上、右下
 //--------------------------------3DRender--------------------------------//
 
@@ -303,43 +299,86 @@ void RotationCaculateTask(void *pvParam)
     {
         // ESP_LOGI(TAG, "RotationCaculateTask:Waiting...");
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        if(loop1(&fac_yaw,&fac_pitch,&fac_roll)){
-        //ESP_LOGI(TAG, "RotationCaculateTask:Caculate");
-        cy = cos(fac_yaw);
-        sy = sin(fac_yaw);
-        cp = cos(fac_pitch);
-        sp = sin(fac_pitch);
-        cr = cos(fac_roll);
-        sr = sin(fac_roll);
+        if (getEularData(&fac_yaw, &fac_pitch, &fac_roll))
+        {
+            fac_yaw -= fac_yaw_init;
+            fac_pitch -= fac_pitch_init;
+            fac_roll -= fac_roll_init;
+            //fac_yaw *= fac_yaw_init;
+            fac_pitch *= fac_pitch_k;
+            fac_roll *= fac_roll_k;
+            // ESP_LOGI(TAG, "RotationCaculateTask:Caculate");
+            cy = cos(fac_yaw);
+            sy = sin(fac_yaw);
+            cp = cos(fac_pitch);
+            sp = sin(fac_pitch);
+            cr = cos(fac_roll);
+            sr = sin(fac_roll);
 
-        cr2 = cr * cr;
-        sr2 = sr * sr;
-        sy2 = sy * sy;
-        cy2 = cy * cy;
+            cr2 = cr * cr;
+            sr2 = sr * sr;
+            sy2 = sy * sy;
+            cy2 = cy * cy;
 
-        fac_a = (cp * cr2 * cy + cp * cy * sr2);
-        fac_b = (cy * sp * sr - cr * sy);
-        fac_c = (cr * cy * sp + sr * sy);
-        fac_d = (cp * cr2 * sy + cp * sr2 * sy);
-        fac_e = (cr * cy + sp * sr * sy);
-        fac_f = (-cy * sr + cr * sp * sy);
-        fac_g = (cr2 * cy2 * sp + cy2 * sp * sr2 + cr2 * sp * sy2 + sp * sr2 * sy2);
-        fac_h = (cp * sr);
-        fac_i = (cp * cr);
+            fac_a = (cp * cr2 * cy + cp * cy * sr2);
+            fac_b = (cy * sp * sr - cr * sy);
+            fac_c = (cr * cy * sp + sr * sy);
+            fac_d = (cp * cr2 * sy + cp * sr2 * sy);
+            fac_e = (cr * cy + sp * sr * sy);
+            fac_f = (-cy * sr + cr * sp * sy);
+            fac_g = (cr2 * cy2 * sp + cy2 * sp * sr2 + cr2 * sp * sy2 + sp * sr2 * sy2);
+            fac_h = (cp * sr);
+            fac_i = (cp * cr);
         }
     }
 }
 //--------------------------------RotationCaculateTask--------------------------------//
 
+
+//第二个按键的中断
+void kInit()
+{
+    fac_roll_k/=1.1;
+    fac_pitch_k/=1.1;
+    //fac_yaw_init/=1.1;
+}
+
+
+//第一个按键的中断
+void roatationInit()
+{
+    fac_roll_init=fac_roll;
+    fac_pitch_init=fac_pitch;
+    fac_yaw_init=fac_yaw;
+
+}
+
+void key_init()
+{
+    gpio_set_direction(42, GPIO_MODE_INPUT);
+    gpio_pullup_en(42);
+    gpio_set_intr_type(42, GPIO_INTR_NEGEDGE);
+    gpio_intr_enable(42);
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
+    gpio_isr_handler_add(42, roatationInit, NULL);  // 注册中断处理程序
+
+    gpio_set_direction(0, GPIO_MODE_INPUT);
+    gpio_pullup_en(0);
+    gpio_set_intr_type(0, GPIO_INTR_NEGEDGE);
+    gpio_intr_enable(0);
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
+    gpio_isr_handler_add(0, kInit, NULL);  // 注册中断处理程序
+}
+
 void app_main(void)
 {
-    setup1();
+    setupBNO085();
+    key_init();
     // 3D渲染设置
-    // UpdateRotation(1, 0.2, 0.2);
     Black = lv_color_make(0, 0, 0);
     buffer = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    //initI2C();
-    //initLcosI2CComand();
+    // initI2C();
+    // initLcosI2CComand();
 
     xTaskCreatePinnedToCore(RotationCaculateTask, "RotationCaculateTask", 1024 * 10, NULL, 2, &xRotationCaculateTask, 0);
     fac_yaw = 1;
@@ -489,8 +528,6 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(10));
         // The task running lv_timer_handler should have lower priority than that running `lv_tick_inc`
         lv_timer_handler();
-
-        
 
         // fac_yaw = ia / 100.0;
         // fac_pitch = ia / 100.0;
