@@ -73,6 +73,7 @@ static lv_disp_drv_t disp_drv;
 lv_color_t *buffer1 = NULL;
 lv_color_t *buffer = NULL;
 lv_color_t Black;
+lv_color_t Red;
 
 Point3 ScreenPoints[] = {{-0.8, 0.6, -1}, {-0.8, -0.6, -1}, {0.8, 0.6, -1}, {0.8, -0.6, -1}}; // 屏幕三维对应点： 左上、左下、右上、右下
 Point3 ScreenPoints3[] = {{0, 1, -1}, {0, 0, -1}, {1, 1, -1}, {1, 0, -1}};                    // 贴图对应点：左上、左下、右上、右下
@@ -97,7 +98,6 @@ static bool example_on_vsync_event(esp_lcd_panel_handle_t panel, const esp_lcd_r
 #endif
     return high_task_awoken == pdTRUE;
 }
-
 
 static void example_increase_lvgl_tick(void *arg)
 {
@@ -126,16 +126,16 @@ static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_
 
 void perspectiveProjection1(Point3 p, Point3 *resultPoint)
 {
-    float x1 = Camx + fac_a * p.x + fac_b * p.y + fac_c * p.z;
-    float y1 = Camy + fac_d * p.x + fac_e * p.y + fac_f * p.z;
+    float x1 = fac_a * p.x + fac_b * p.y + fac_c * p.z;
+    float y1 = fac_d * p.x + fac_e * p.y + fac_f * p.z;
     // float z1 = (2 * far * near) / (-far + near) + (Camz * (far + near)) / (-far + near) + (far + near) * (-cr *cr * cy *cy * sp - cy *cy * sp * sr *sr - cr *cr * sp * sy *sy - sp * sr *sr * sy *sy) * p.x / (-far + near) + (cp * (far + near) * sr * 1.0) * p.y / (-far + near) + cp * cr * (far + near)  * p.z / (-far + near);
-    float w = -Camz + fac_g * p.x - fac_h * p.y - fac_i * p.z;
+    float w = fac_g * p.x - fac_h * p.y - fac_i * p.z;
 
     resultPoint->x = (0.5 * (x1 / w + 1) * 320);
-    resultPoint->y = (0.5 * (1 - y1 / w) * 320)-40;
+    resultPoint->y = (0.5 * (1 - y1 / w) * 320) - 40;
     resultPoint->z = 1 / w; // 注意这里存的是w的倒数
 }
-
+#define DEGUB_RED //开启调试红色外框
 //--------------------------------Calculate3DTask--------------------------------//
 void Calculate3DTask(void *pvParam)
 {
@@ -272,7 +272,18 @@ void Calculate3DTask(void *pvParam)
                     }
                     else
                     {
-                        buffer[i * 320 + j] = Black;
+#ifdef DEGUB_RED
+                        if ((i > 236) | (i < 3) | (j > 316) | (j < 3))
+                        {
+                            buffer[i * 320 + j] = Red;
+                        }
+                        else
+                        {
+#endif
+                            buffer[i * 320 + j] = Black;
+#ifdef DEGUB_RED
+                        }
+#endif 
                     }
                 }
             }
@@ -282,7 +293,7 @@ void Calculate3DTask(void *pvParam)
     }
 }
 //--------------------------------Calculate3DTask--------------------------------//
-bool flag_open_yaw=1;
+bool flag_open_yaw = 1;
 //--------------------------------RotationCaculateTask--------------------------------//
 void RotationCaculateTask(void *pvParam)
 {
@@ -302,17 +313,19 @@ void RotationCaculateTask(void *pvParam)
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         if (getEularData(&fac_yaw, &fac_pitch, &fac_roll))
         {
-            //ESP_LOGI(TAG,"%f,%f",fac_pitch_k,fac_roll_k);
-            float faca_yaw   = 0;
-            if(flag_open_yaw){
-             faca_yaw   = fac_yaw-fac_yaw_init;
+            // ESP_LOGI(TAG, "RotationCaculateTask:Caculate");
+            // ESP_LOGI(TAG,"%f,%f",fac_pitch_k,fac_roll_k);
+            float faca_yaw = 0;
+            if (flag_open_yaw)
+            {
+                faca_yaw = fac_yaw - fac_yaw_init;
             }
-            float faca_pitch = fac_pitch-fac_pitch_init;
-            float faca_roll  = fac_roll-fac_roll_init;
-            //fac_yaw *= fac_yaw_init;
+            float faca_pitch = fac_pitch - fac_pitch_init;
+            float faca_roll = fac_roll - fac_roll_init;
+
             faca_pitch *= fac_pitch_k;
             faca_roll *= fac_roll_k;
-            // ESP_LOGI(TAG, "RotationCaculateTask:Caculate");
+            
             cy = cos(faca_yaw);
             sy = sin(faca_yaw);
             cp = cos(faca_pitch);
@@ -339,25 +352,28 @@ void RotationCaculateTask(void *pvParam)
 }
 //--------------------------------RotationCaculateTask--------------------------------//
 
-
-//第二个按键的中断
-void kInit()
+// 第二个按键的中断
+void kInt()
 {
-    //fac_roll_k+=0.01;
-    //fac_pitch_k =fac_roll_k*1.33;
-    flag_open_yaw=!flag_open_yaw;
+    
+    
+    flag_open_yaw = !flag_open_yaw;
 }
 
-
-//第一个按键的中断
-void roatationInit()
+// 第一个按键的中断
+void roatationInt()
 {
-    fac_roll_init=fac_roll;
-    fac_pitch_init=fac_pitch;
-    fac_yaw_init=fac_yaw;
-
+    fac_roll_init = fac_roll;
+    fac_pitch_init = fac_pitch;
+    fac_yaw_init = fac_yaw;
 }
 
+// 更新角度
+// void roatationUpdateInt()
+// {
+    // xTaskNotifyGive(xRotationCaculateTask);
+// }
+// 
 void key_init()
 {
     gpio_set_direction(42, GPIO_MODE_INPUT);
@@ -365,30 +381,37 @@ void key_init()
     gpio_set_intr_type(42, GPIO_INTR_NEGEDGE);
     gpio_intr_enable(42);
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
-    gpio_isr_handler_add(42, roatationInit, NULL);  // 注册中断处理程序
+    gpio_isr_handler_add(42, roatationInt, NULL);  // 注册中断处理程序
 
     gpio_set_direction(0, GPIO_MODE_INPUT);
     gpio_pullup_en(0);
     gpio_set_intr_type(0, GPIO_INTR_NEGEDGE);
     gpio_intr_enable(0);
-    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
-    gpio_isr_handler_add(0, kInit, NULL);  // 注册中断处理程序
+    // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
+    gpio_isr_handler_add(0, kInt, NULL); // 注册中断处理程序
+
+    // gpio_set_direction(0, GPIO_MODE_INPUT);
+    // gpio_pullup_en(0);
+    // gpio_set_intr_type(0, GPIO_INTR_NEGEDGE);
+    // gpio_intr_enable(0);
+    // // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设
+    // gpio_isr_handler_add(0, roatationUpdateInt, NULL); // 注册中断处理程序
 }
 
 void app_main(void)
 {
+    // 设备初始化
     setupBNO085();
     key_init();
+    // initI2C();//iic上面已经初始化过了
+    initLcosI2CComand();
     // 3D渲染设置
     Black = lv_color_make(0, 0, 0);
+    Red = lv_color_make(0, 0, 255);
     buffer = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    //initI2C();//上面已经初始化过了
-    initLcosI2CComand();
 
+    // FreeRtos任务
     xTaskCreatePinnedToCore(RotationCaculateTask, "RotationCaculateTask", 1024 * 10, NULL, 2, &xRotationCaculateTask, 0);
-    fac_yaw = 1;
-    fac_pitch = 0.2;
-    fac_roll = 0.2;
     xTaskNotifyGive(xRotationCaculateTask);
     xTaskCreatePinnedToCore(Calculate3DTask, "Calculate3DTask", 1024 * 50, NULL, 1, &xCalculate3DTask, 1);
 
@@ -526,23 +549,13 @@ void app_main(void)
     // 启动lvgl程序
     ESP_LOGI(TAG, "Display LVGL Scatter Chart");
     example_lvgl_demo_ui(disp);
-    // float ia = -50;
+
     while (1)
     {
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance
         vTaskDelay(pdMS_TO_TICKS(10));
         // The task running lv_timer_handler should have lower priority than that running `lv_tick_inc`
         lv_timer_handler();
-
-        // fac_yaw = ia / 100.0;
-        // fac_pitch = ia / 100.0;
-        // fac_roll = ia / 100.0;
         xTaskNotifyGive(xRotationCaculateTask);
-        // ia++;
-        // ESP_LOGI(TAG, "%f", ia);
-        // if (ia == 50)
-        // {
-        //     ia = -50;
-        // }
     }
 }

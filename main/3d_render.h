@@ -4,7 +4,6 @@
 #include "lvgl.h"
 
 
-#define Pi 3.1415926
 
 
 typedef struct
@@ -25,15 +24,17 @@ static float fac_i;
 static float fac_yaw;
 static float fac_pitch;
 static float fac_roll;
-static float Camx = 0;
-static float Camy = 0;
-static float Camz = 0;
+
+
+// static float Camx = 0;
+// static float Camy = 0;
+// static float Camz = 0;
 // static float near = 0.1;
 // static float far = 1000;
 
 
-static float fac_roll_k=0.197;
-static float fac_pitch_k=0.263;
+#define fac_roll_k   0.197
+#define fac_pitch_k  0.263
 
 static float fac_yaw_init;
 static float fac_pitch_init;
