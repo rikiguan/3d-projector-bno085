@@ -32,8 +32,8 @@ static float Camz = 0;
 // static float far = 1000;
 
 
-static float fac_roll_k=1;
-static float fac_pitch_k=1;
+static float fac_roll_k=0.197;
+static float fac_pitch_k=0.263;
 
 static float fac_yaw_init;
 static float fac_pitch_init;

@@ -74,7 +74,7 @@ lv_color_t *buffer1 = NULL;
 lv_color_t *buffer = NULL;
 lv_color_t Black;
 
-Point3 ScreenPoints[] = {{-0.8, 0.8, -1}, {-0.8, -0.8, -1}, {0.8, 0.8, -1}, {0.8, -0.8, -1}}; // 屏幕三维对应点： 左上、左下、右上、右下
+Point3 ScreenPoints[] = {{-0.8, 0.6, -1}, {-0.8, -0.6, -1}, {0.8, 0.6, -1}, {0.8, -0.6, -1}}; // 屏幕三维对应点： 左上、左下、右上、右下
 Point3 ScreenPoints3[] = {{0, 1, -1}, {0, 0, -1}, {1, 1, -1}, {1, 0, -1}};                    // 贴图对应点：左上、左下、右上、右下
 //--------------------------------3DRender--------------------------------//
 
@@ -97,6 +97,7 @@ static bool example_on_vsync_event(esp_lcd_panel_handle_t panel, const esp_lcd_r
 #endif
     return high_task_awoken == pdTRUE;
 }
+
 
 static void example_increase_lvgl_tick(void *arg)
 {
@@ -131,7 +132,7 @@ void perspectiveProjection1(Point3 p, Point3 *resultPoint)
     float w = -Camz + fac_g * p.x - fac_h * p.y - fac_i * p.z;
 
     resultPoint->x = (0.5 * (x1 / w + 1) * 320);
-    resultPoint->y = (0.5 * (1 - y1 / w) * 240);
+    resultPoint->y = (0.5 * (1 - y1 / w) * 320)-40;
     resultPoint->z = 1 / w; // 注意这里存的是w的倒数
 }
 
@@ -281,7 +282,7 @@ void Calculate3DTask(void *pvParam)
     }
 }
 //--------------------------------Calculate3DTask--------------------------------//
-
+bool flag_open_yaw=1;
 //--------------------------------RotationCaculateTask--------------------------------//
 void RotationCaculateTask(void *pvParam)
 {
@@ -301,19 +302,23 @@ void RotationCaculateTask(void *pvParam)
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         if (getEularData(&fac_yaw, &fac_pitch, &fac_roll))
         {
-            fac_yaw -= fac_yaw_init;
-            fac_pitch -= fac_pitch_init;
-            fac_roll -= fac_roll_init;
+            //ESP_LOGI(TAG,"%f,%f",fac_pitch_k,fac_roll_k);
+            float faca_yaw   = 0;
+            if(flag_open_yaw){
+             faca_yaw   = fac_yaw-fac_yaw_init;
+            }
+            float faca_pitch = fac_pitch-fac_pitch_init;
+            float faca_roll  = fac_roll-fac_roll_init;
             //fac_yaw *= fac_yaw_init;
-            fac_pitch *= fac_pitch_k;
-            fac_roll *= fac_roll_k;
+            faca_pitch *= fac_pitch_k;
+            faca_roll *= fac_roll_k;
             // ESP_LOGI(TAG, "RotationCaculateTask:Caculate");
-            cy = cos(fac_yaw);
-            sy = sin(fac_yaw);
-            cp = cos(fac_pitch);
-            sp = sin(fac_pitch);
-            cr = cos(fac_roll);
-            sr = sin(fac_roll);
+            cy = cos(faca_yaw);
+            sy = sin(faca_yaw);
+            cp = cos(faca_pitch);
+            sp = sin(faca_pitch);
+            cr = cos(faca_roll);
+            sr = sin(faca_roll);
 
             cr2 = cr * cr;
             sr2 = sr * sr;
@@ -338,9 +343,9 @@ void RotationCaculateTask(void *pvParam)
 //第二个按键的中断
 void kInit()
 {
-    fac_roll_k/=1.1;
-    fac_pitch_k/=1.1;
-    //fac_yaw_init/=1.1;
+    //fac_roll_k+=0.01;
+    //fac_pitch_k =fac_roll_k*1.33;
+    flag_open_yaw=!flag_open_yaw;
 }
 
 
@@ -377,8 +382,8 @@ void app_main(void)
     // 3D渲染设置
     Black = lv_color_make(0, 0, 0);
     buffer = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    // initI2C();
-    // initLcosI2CComand();
+    //initI2C();//上面已经初始化过了
+    initLcosI2CComand();
 
     xTaskCreatePinnedToCore(RotationCaculateTask, "RotationCaculateTask", 1024 * 10, NULL, 2, &xRotationCaculateTask, 0);
     fac_yaw = 1;

@@ -31,10 +31,10 @@ extern "C" int getEularData(float* fac_yaw,float* fac_pitch,float* fac_roll)
     // Look for reports from the IMU
     if (myIMU.dataAvailable() == true)
     {
-        *fac_roll = -(myIMU.getRoll());   // Convert roll to degrees俯仰
+        *fac_roll = (myIMU.getRoll());   // Convert roll to degrees俯仰
         *fac_yaw = -(myIMU.getPitch()); // Convert pitch to degrees横滚
-        *fac_pitch = (myIMU.getYaw())-1.63;     // Convert yaw / heading to degrees偏航
-        ESP_LOGI(TAG,"%f,%f,%f",*fac_roll,*fac_pitch,*fac_yaw);
+        *fac_pitch = -(myIMU.getYaw());     // Convert yaw / heading to degrees偏航
+        //ESP_LOGI(TAG,"%f,%f,%f",*fac_roll,*fac_pitch,*fac_yaw);
         return 1;
     }
     return 0;
