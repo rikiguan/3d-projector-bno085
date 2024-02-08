@@ -135,7 +135,7 @@ void perspectiveProjection1(Point3 p, Point3 *resultPoint)
     resultPoint->y = (0.5 * (1 - y1 / w) * 320) - 40;
     resultPoint->z = 1 / w; // 注意这里存的是w的倒数
 }
-#define DEGUB_RED //开启调试红色外框
+#define DEGUB_RED // 开启调试红色外框
 //--------------------------------Calculate3DTask--------------------------------//
 void Calculate3DTask(void *pvParam)
 {
@@ -283,7 +283,7 @@ void Calculate3DTask(void *pvParam)
                             buffer[i * 320 + j] = Black;
 #ifdef DEGUB_RED
                         }
-#endif 
+#endif
                     }
                 }
             }
@@ -325,7 +325,7 @@ void RotationCaculateTask(void *pvParam)
 
             faca_pitch *= fac_pitch_k;
             faca_roll *= fac_roll_k;
-            
+
             cy = cos(faca_yaw);
             sy = sin(faca_yaw);
             cp = cos(faca_pitch);
@@ -355,8 +355,7 @@ void RotationCaculateTask(void *pvParam)
 // 第二个按键的中断
 void kInt()
 {
-    
-    
+
     flag_open_yaw = !flag_open_yaw;
 }
 
@@ -369,19 +368,26 @@ void roatationInt()
 }
 
 // 更新角度
-// void roatationUpdateInt()
-// {
-    // xTaskNotifyGive(xRotationCaculateTask);
-// }
-// 
+void roatationUpdateInt()
+{
+    BaseType_t xHigherPriorityTaskWoken;
+    vTaskNotifyGiveFromISR(xRotationCaculateTask, &xHigherPriorityTaskWoken);
+    if (xHigherPriorityTaskWoken == pdTRUE)
+        portYIELD_FROM_ISR();
+    // printf("hello");
+    // vTaskNotifyGiveFromISR(xRotationCaculateTask,NULL);
+    //  xTaskNotifyGive(xRotationCaculateTask);
+}
+
 void key_init()
 {
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
     gpio_set_direction(42, GPIO_MODE_INPUT);
     gpio_pullup_en(42);
     gpio_set_intr_type(42, GPIO_INTR_NEGEDGE);
     gpio_intr_enable(42);
-    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
-    gpio_isr_handler_add(42, roatationInt, NULL);  // 注册中断处理程序
+
+    gpio_isr_handler_add(42, roatationInt, NULL); // 注册中断处理程序
 
     gpio_set_direction(0, GPIO_MODE_INPUT);
     gpio_pullup_en(0);
@@ -390,12 +396,12 @@ void key_init()
     // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
     gpio_isr_handler_add(0, kInt, NULL); // 注册中断处理程序
 
-    // gpio_set_direction(0, GPIO_MODE_INPUT);
-    // gpio_pullup_en(0);
-    // gpio_set_intr_type(0, GPIO_INTR_NEGEDGE);
-    // gpio_intr_enable(0);
-    // // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设
-    // gpio_isr_handler_add(0, roatationUpdateInt, NULL); // 注册中断处理程序
+    gpio_set_direction(33, GPIO_MODE_INPUT);
+    gpio_pullup_en(33);
+    gpio_set_intr_type(33, GPIO_INTR_NEGEDGE);
+    gpio_intr_enable(33);
+    // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设
+    gpio_isr_handler_add(33, roatationUpdateInt, NULL); // 注册中断处理程序
 }
 
 void app_main(void)
@@ -556,6 +562,6 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(10));
         // The task running lv_timer_handler should have lower priority than that running `lv_tick_inc`
         lv_timer_handler();
-        xTaskNotifyGive(xRotationCaculateTask);
+        // xTaskNotifyGive(xRotationCaculateTask);
     }
 }

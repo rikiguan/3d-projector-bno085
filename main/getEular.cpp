@@ -1,9 +1,13 @@
 #include "Arduino.h"
 #include <Wire.h>
 #include "esp_log.h"
+#include "freertos/task.h"
 #include "SparkFun_BNO080_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_BNO080
 BNO080 myIMU;
 static const char *TAG = "getEular";
+
+
+
 
 extern "C" void setupBNO085(void)
 {
@@ -20,7 +24,7 @@ extern "C" void setupBNO085(void)
         while (1)
             ;
     }
-
+    
     Wire.setClock(400000); // Increase I2C data rate to 400kHz
     myIMU.enableRotationVector(50); // Send data update every 50ms
 
