@@ -25,8 +25,8 @@ extern "C" void setupBNO085(void)
             ;
     }
     
-    Wire.setClock(400000); // Increase I2C data rate to 400kHz
-    myIMU.enableRotationVector(50); // Send data update every 50ms
+    Wire.setClock(2000000); // Increase I2C data rate to 2000kHz
+    myIMU.enableRotationVector(1); // Send data update every 50ms
 
 }
 

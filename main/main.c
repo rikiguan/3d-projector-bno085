@@ -290,6 +290,7 @@ void Calculate3DTask(void *pvParam)
         }
         esp_lcd_panel_draw_bitmap(disp_drv.user_data, 0, 0, 320, 240, buffer);
         lv_disp_flush_ready(&disp_drv);
+        //vTaskNotifyGiveFromISR(xRotationCaculateTask,NULL);
     }
 }
 //--------------------------------Calculate3DTask--------------------------------//
@@ -309,10 +310,16 @@ void RotationCaculateTask(void *pvParam)
     float cy2;
     while (1)
     {
+        //vTaskNotifyGiveFromISR(xRotationCaculateTask,NULL);
         // ESP_LOGI(TAG, "RotationCaculateTask:Waiting...");
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        //ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        //getEularData(&fac_yaw, &fac_pitch, &fac_roll);
+
+        vTaskDelay(pdMS_TO_TICKS(1));
+        //printf("get");
         if (getEularData(&fac_yaw, &fac_pitch, &fac_roll))
         {
+            //printf("ok\n");
             // ESP_LOGI(TAG, "RotationCaculateTask:Caculate");
             // ESP_LOGI(TAG,"%f,%f",fac_pitch_k,fac_roll_k);
             float faca_yaw = 0;
@@ -370,18 +377,18 @@ void roatationInt()
 // 更新角度
 void roatationUpdateInt()
 {
-    BaseType_t xHigherPriorityTaskWoken;
-    vTaskNotifyGiveFromISR(xRotationCaculateTask, &xHigherPriorityTaskWoken);
-    if (xHigherPriorityTaskWoken == pdTRUE)
-        portYIELD_FROM_ISR();
+    //BaseType_t xHigherPriorityTaskWoken;
+    //vTaskNotifyGiveFromISR(xRotationCaculateTask, &xHigherPriorityTaskWoken);
+    //if (xHigherPriorityTaskWoken == pdTRUE)
+    //    portYIELD_FROM_ISR();
     // printf("hello");
-    // vTaskNotifyGiveFromISR(xRotationCaculateTask,NULL);
+    vTaskNotifyGiveFromISR(xRotationCaculateTask,NULL);
     //  xTaskNotifyGive(xRotationCaculateTask);
 }
-
+#define ESP_INTR_FLAG_DEFAULT 0
 void key_init()
 {
-    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
+    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT); // 设置中断优先级最低
     gpio_set_direction(42, GPIO_MODE_INPUT);
     gpio_pullup_en(42);
     gpio_set_intr_type(42, GPIO_INTR_NEGEDGE);
@@ -396,12 +403,12 @@ void key_init()
     // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设置中断优先级最低
     gpio_isr_handler_add(0, kInt, NULL); // 注册中断处理程序
 
-    gpio_set_direction(33, GPIO_MODE_INPUT);
-    gpio_pullup_en(33);
-    gpio_set_intr_type(33, GPIO_INTR_NEGEDGE);
-    gpio_intr_enable(33);
-    // gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设
-    gpio_isr_handler_add(33, roatationUpdateInt, NULL); // 注册中断处理程序
+    //gpio_set_direction(33, GPIO_MODE_INPUT);
+    //gpio_pullup_en(33);
+    //gpio_set_intr_type(33, GPIO_INTR_NEGEDGE);
+    //gpio_intr_enable(33);
+    ////gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1); // 设
+    //gpio_isr_handler_add(33, roatationUpdateInt, NULL); // 注册中断处理程序
 }
 
 void app_main(void)
@@ -417,9 +424,9 @@ void app_main(void)
     buffer = heap_caps_malloc(EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
 
     // FreeRtos任务
-    xTaskCreatePinnedToCore(RotationCaculateTask, "RotationCaculateTask", 1024 * 10, NULL, 2, &xRotationCaculateTask, 0);
+    xTaskCreatePinnedToCore(RotationCaculateTask, "RotationCaculateTask", 1024 * 10, NULL, 20, &xRotationCaculateTask, 0);
     xTaskNotifyGive(xRotationCaculateTask);
-    xTaskCreatePinnedToCore(Calculate3DTask, "Calculate3DTask", 1024 * 50, NULL, 1, &xCalculate3DTask, 1);
+    xTaskCreatePinnedToCore(Calculate3DTask, "Calculate3DTask", 1024 * 50, NULL, 10, &xCalculate3DTask, 1);
 
     // 屏幕驱动
     static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
@@ -562,6 +569,6 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(10));
         // The task running lv_timer_handler should have lower priority than that running `lv_tick_inc`
         lv_timer_handler();
-        // xTaskNotifyGive(xRotationCaculateTask);
+        //xTaskNotifyGive(xRotationCaculateTask);
     }
 }
