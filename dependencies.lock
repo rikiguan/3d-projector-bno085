@@ -30,11 +30,11 @@ dependencies:
       type: service
     version: 1.1.1
   espressif/esp-zigbee-lib:
-    component_hash: 9de396e73de20f64376a4da431c4998fce586c5938523b31fb790d2a14eb3b51
+    component_hash: a1a23f47316d2d44b1573459c8cf547da7f2c8ea987154ad8d28235db69f1481
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 1.1.0
+    version: 1.1.1
   espressif/esp_diag_data_store:
     component_hash: 8849195251dbb8a2d7268335277cfa310cef36e4ac1e90cd59ad3be4269a30d7
     source:
@@ -53,12 +53,6 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 1.0.1
-  espressif/esp_rainmaker:
-    component_hash: 232425d1c9b9dbdaa5c109b3e359fba0e6956e35fcf22725f07ed7e4389e1191
-    source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 1.1.0
   espressif/esp_schedule:
     component_hash: 2cbc7e2584f523d10fbfb4ecb7d25c07fa7d7757ab23d7a127494b1a58131ffe
     source:
@@ -107,23 +101,29 @@ dependencies:
       service_url: https://api.components.espressif.com/
       type: service
     version: 1.4.5
+  espressif__esp_rainmaker:
+    component_hash: null
+    source:
+      path: /home/ting/桌面/td-projector-bno085/td-projector-bno085/components/espressif__esp_rainmaker
+      type: local
+    version: 1.1.0
   idf:
     component_hash: null
     source:
       type: idf
     version: 5.1.2
   joltwallet/littlefs:
-    component_hash: 86bd245966dc5618d9513959bae9a102200f4ead1a31140905b4b48413ae3816
+    component_hash: 03a21848de65d85a1f914dd6fb9dea5e75e794989d70d185a007e27c3046bb92
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 1.14.0
+    version: 1.14.1
   lvgl/lvgl:
     component_hash: 948bff879a345149b83065535bbc4a026ce9f47498a22881e432a264b9098015
     source:
       service_url: https://api.components.espressif.com/
       type: service
     version: 8.3.11
-manifest_hash: b5611dc1d3669275be7c1e4310c26d8d8661fa8928cd4aa71540e55fb5abd22e
+manifest_hash: 4399e678155a3c1740da9989817d7b28081f16ab753846a1df32b39a95367c86
 target: esp32s3
 version: 1.0.0

@@ -1,35 +1,24 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- |
+| Supported Targets | ESP32-S3 |
+| ----------------- | -------- |
 
-# _Sample project_
+# _ESP32投影矫正_
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+ESP32实时获取陀螺仪数据，计算后输出矫正画面，使得投影在某固定平面上的画面始终不变形
 
-This is the simplest buildable example. The example is used by command `idf.py create-project`
-that copies the project to user specified path and set it's name. For more information follow the [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project)
+## 硬件设计
+**esp32s3n8r8**主控，**bno085**陀螺仪，**lcos**投影模块(**RGB**接口)
+
+## 软件架构
+考虑到陀螺仪传感器的可移植性，本项目采用`espidf`和`arduino`共同使用开发
 
 
-
-## How to use example
-We encourage the users to use the example as a template for the new projects.
-A recommended way is to follow the instructions on a [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project).
-
-## Example folder contents
-
-The project **sample_project** contains one source file in C language [main.c](main/main.c). The file is located in folder [main](main).
-
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
-files that provide set of directives and instructions describing the project's source files and targets
-(executable, library, or both). 
-
-Below is short explanation of remaining files in the project folder.
 
 ```
 ├── CMakeLists.txt
-├── main
+├── mains
 │   ├── CMakeLists.txt
-│   └── main.c
+│   ├── main.c
+│   └── ...
+├── ...
 └── README.md                  This is the file you are currently reading
 ```
-Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
-They are not used or needed when building with CMake and idf.py.
