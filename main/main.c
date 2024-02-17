@@ -67,6 +67,7 @@ static const char *TAG = "main";
 
 //--------------------------------3DRender--------------------------------//
 static TaskHandle_t xRotationCaculateTask = NULL;
+static TaskHandle_t xRotationUpdateTask = NULL;
 static TaskHandle_t xCalculate3DTask = NULL;
 static lv_disp_drv_t disp_drv;
 
@@ -295,6 +296,22 @@ void Calculate3DTask(void *pvParam)
 }
 //--------------------------------Calculate3DTask--------------------------------//
 bool flag_open_yaw = 1;
+
+//--------------------------------RotationUpdateTask--------------------------------//
+void RotationUpdateTask(void *pvParam)
+{
+    
+    while (1)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        fac_roll_init = fac_roll;
+        fac_pitch_init = fac_pitch;
+        fac_yaw_init = fac_yaw;
+    }
+}
+
+//--------------------------------RotationUpdateTask--------------------------------//
+
 //--------------------------------RotationCaculateTask--------------------------------//
 void RotationCaculateTask(void *pvParam)
 {
@@ -362,13 +379,14 @@ void RotationCaculateTask(void *pvParam)
 // 第二个按键的中断
 void kInt()
 {
-
+    
     flag_open_yaw = !flag_open_yaw;
 }
 
 // 第一个按键的中断
 void roatationInt()
 {
+
     fac_roll_init = fac_roll;
     fac_pitch_init = fac_pitch;
     fac_yaw_init = fac_yaw;
@@ -382,19 +400,19 @@ void roatationUpdateInt()
     //if (xHigherPriorityTaskWoken == pdTRUE)
     //    portYIELD_FROM_ISR();
     // printf("hello");
-    vTaskNotifyGiveFromISR(xRotationCaculateTask,NULL);
+    vTaskNotifyGiveFromISR(xRotationUpdateTask,NULL);
     //  xTaskNotifyGive(xRotationCaculateTask);
 }
-#define ESP_INTR_FLAG_DEFAULT 0
+
 void key_init()
 {
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT); // 设置中断优先级最低
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3); // 设置中断优先级最低
     gpio_set_direction(42, GPIO_MODE_INPUT);
     gpio_pullup_en(42);
     gpio_set_intr_type(42, GPIO_INTR_NEGEDGE);
     gpio_intr_enable(42);
 
-    gpio_isr_handler_add(42, roatationInt, NULL); // 注册中断处理程序
+    gpio_isr_handler_add(42, roatationUpdateInt, NULL); // 注册中断处理程序
 
     gpio_set_direction(0, GPIO_MODE_INPUT);
     gpio_pullup_en(0);
@@ -427,7 +445,7 @@ void app_main(void)
     xTaskCreatePinnedToCore(RotationCaculateTask, "RotationCaculateTask", 1024 * 10, NULL, 20, &xRotationCaculateTask, 0);
     xTaskNotifyGive(xRotationCaculateTask);
     xTaskCreatePinnedToCore(Calculate3DTask, "Calculate3DTask", 1024 * 50, NULL, 10, &xCalculate3DTask, 1);
-
+    xTaskCreatePinnedToCore(RotationUpdateTask, "RotationUpdateTask", 1024 * 1, NULL, 20, &xRotationUpdateTask, 0);
     // 屏幕驱动
     static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
     // static lv_disp_drv_t disp_drv;      // contains callback functions
